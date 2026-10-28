@@ -1,0 +1,176 @@
+# =============================================================================
+# DAL-CRED-001 · Parámetros del generador de datos sintéticos
+# -----------------------------------------------------------------------------
+# Toda fecha, volumen y supuesto de calibración vive aquí, no en el código
+# (regla 1 del periodo de datos de la metodología del Lab). Cambiar un valor
+# aquí y volver a correr el generador produce un conjunto de datos nuevo y
+# reproducible: la misma semilla siempre genera los mismos archivos.
+# =============================================================================
+
+proyecto: DAL-CRED-001
+banco_ficticio: Banco Cumbre, S.A.
+semilla: 20260101          # semilla aleatoria: garantiza reproducibilidad
+
+periodo:
+  periodo_inicio: "2025-01-01"   # inicio de la línea base
+  fecha_go_live: "2026-01-01"    # separa antes y después del proyecto
+  fecha_corte: "2026-10-31"      # último dato real; lo posterior es proyección (F4)
+  periodo_fin: "2026-12-31"      # fin del periodo de análisis
+  stock_desde: "2020-01-01"      # desembolsos de la cartera vigente al inicio
+
+# escala multiplica todos los conteos. 1.0 = banco completo (~Q4,800 M de
+# cartera); las pruebas automáticas usan 0.02 para correr en segundos.
+escala: 1.0
+
+# -----------------------------------------------------------------------------
+# Productos. Montos en quetzales (GTQ); tasas anuales; plazos en meses.
+# participacion_objetivo = peso esperado en el saldo al corte (calibración).
+# -----------------------------------------------------------------------------
+productos:
+  TC:
+    nombre: Tarjeta de crédito
+    familia: Tarjeta
+    segmento_jm47: Consumo
+    stock_inicial: 47850         # cuentas vivas al 31-dic-2024
+    solicitudes_mes: 2244        # solicitudes mensuales promedio en 2025
+    monto_mediano: 28000       # límite / monto mediano
+    monto_dispersion: 0.55       # desviación del logaritmo del monto
+    plazo_meses: [0]             # 0 = revolvente
+    tasa_anual: 0.42
+    riesgo_base: 0.018         # prob. mensual de pasar de al día a 1–30 días
+    participacion_objetivo: 0.22
+  CONS:
+    nombre: Préstamo de consumo
+    familia: Consumo
+    segmento_jm47: Consumo
+    stock_inicial: 30305
+    solicitudes_mes: 1308
+    monto_mediano: 55000
+    monto_dispersion: 0.55
+    plazo_meses: [24, 36, 48, 60, 72, 84]
+    tasa_anual: 0.21
+    riesgo_base: 0.019
+    participacion_objetivo: 0.31
+  HIPO:
+    nombre: Hipotecario para vivienda
+    familia: Hipotecario
+    segmento_jm47: Hipotecario para vivienda
+    stock_inicial: 1914
+    solicitudes_mes: 79
+    monto_mediano: 470000
+    monto_dispersion: 0.45
+    plazo_meses: [180, 240, 300]
+    tasa_anual: 0.095
+    riesgo_base: 0.006
+    participacion_objetivo: 0.29
+  EMP_MAYOR:
+    nombre: Empresarial mayor
+    familia: Empresarial
+    segmento_jm47: Empresarial mayor
+    stock_inicial: 240
+    solicitudes_mes: 8
+    monto_mediano: 3000000
+    monto_dispersion: 0.70
+    plazo_meses: [36, 60, 84]
+    tasa_anual: 0.085
+    riesgo_base: 0.006
+    participacion_objetivo: 0.12
+  EMP_MENOR:
+    nombre: Empresarial menor
+    familia: Empresarial
+    segmento_jm47: Empresarial menor
+    stock_inicial: 479
+    solicitudes_mes: 19
+    monto_mediano: 650000
+    monto_dispersion: 0.60
+    plazo_meses: [24, 36, 60]
+    tasa_anual: 0.12
+    riesgo_base: 0.01
+    participacion_objetivo: 0.04
+  MICRO:
+    nombre: Microcrédito
+    familia: Empresarial
+    segmento_jm47: Microcrédito
+    stock_inicial: 4147
+    solicitudes_mes: 206
+    monto_mediano: 35000
+    monto_dispersion: 0.50
+    plazo_meses: [12, 18, 24, 36]
+    tasa_anual: 0.28
+    riesgo_base: 0.022
+    participacion_objetivo: 0.02
+
+# -----------------------------------------------------------------------------
+# Comportamiento de pago: matriz de transición entre tramos de mora.
+# Tramos: 0 al día · 1 de 1–30 · 2 de 31–60 · 3 de 61–90 · 4 de 90+ días.
+# riesgo_base (por producto) define la salida de "al día"; aquí se define
+# qué pasa una vez en mora: probabilidad de curarse o de avanzar.
+# -----------------------------------------------------------------------------
+transiciones:
+  cura:     {1: 0.40, 2: 0.14, 3: 0.06, 4: 0.012}   # regreso a "al día"
+  avance:   {1: 0.30, 2: 0.45, 3: 0.55}             # paso al tramo siguiente
+  # Efecto simulado del proyecto: con las alertas tempranas, Cobros gestiona
+  # antes y la cura de los tramos 1 y 2 mejora desde el go-live.
+  mejora_cura_post_golive: 0.20
+  castigo_meses_en_90: 6     # meses en 90+ antes de castigar (sale de cartera)
+  sensibilidad_riesgo: 0.70  # efecto del riesgo latente del cliente (log-odds)
+
+estacionalidad:
+  # Multiplicador del riesgo de caer en mora por mes calendario. Bono 14 (julio)
+  # y aguinaldo (diciembre) mejoran el pago; enero y febrero lo empeoran.
+  riesgo_mes: {1: 1.18, 2: 1.10, 3: 1.00, 4: 0.98, 5: 1.00, 6: 1.02,
+               7: 0.82, 8: 0.96, 9: 1.00, 10: 1.02, 11: 1.00, 12: 0.84}
+  # Multiplicador del volumen de solicitudes por mes calendario.
+  solicitudes_mes: {1: 0.85, 2: 0.90, 3: 1.00, 4: 0.98, 5: 1.02, 6: 1.00,
+                    7: 1.06, 8: 1.00, 9: 0.98, 10: 1.04, 11: 1.12, 12: 1.15}
+  crecimiento_anual_solicitudes: 0.03
+  prepago_meses: [7, 12]     # meses con prepagos parciales (Bono 14, aguinaldo)
+
+# -----------------------------------------------------------------------------
+# Originación y efecto del proyecto (go-live 1-ene-2026)
+# -----------------------------------------------------------------------------
+originacion:
+  productos_con_scorecard: [TC, CONS]   # hipotecario queda como grupo de control
+  ruido_criterio_analista: 1.10   # antes del go-live: decisión subjetiva (más ruido)
+  ruido_scorecard: 0.55           # después: score SC-CONS v1.0 (menos ruido)
+  tasa_desistimiento: 0.05
+  tasa_excepcion_politica: 0.04   # aprobadas bajo el corte con aprobador de nivel superior
+  horas_respuesta_mediana: {antes: 72, despues: 30}
+  completitud_expediente: {antes: 0.93, despues: 0.995}
+  cobertura_screening_ld: {antes: 0.86, despues: 1.0}
+
+# Versiones de política (dim_politica). El corte aplica al score de originación.
+politicas:
+  - {id: P-01, producto: TC,   vigente_desde: "2020-01-01", corte_score: 600, cuota_ingreso_max: 0.40}
+  - {id: P-02, producto: CONS, vigente_desde: "2020-01-01", corte_score: 600, cuota_ingreso_max: 0.40}
+  - {id: P-03, producto: HIPO, vigente_desde: "2020-01-01", corte_score: 620, cuota_ingreso_max: 0.35}
+  - {id: P-04, producto: EMP_MAYOR, vigente_desde: "2020-01-01", corte_score: 640, cuota_ingreso_max: 0.50}
+  - {id: P-05, producto: EMP_MENOR, vigente_desde: "2020-01-01", corte_score: 620, cuota_ingreso_max: 0.50}
+  - {id: P-06, producto: MICRO, vigente_desde: "2020-01-01", corte_score: 580, cuota_ingreso_max: 0.45}
+  # Relajación comercial de abril de 2026: baja el corte de tarjeta de 600 a 560.
+  # Es la causa de las cosechas deterioradas de mayo y junio (vista 3).
+  # Vino con una campaña digital de "aprobación inmediata" que atrajo solicitantes
+  # más riesgosos: z_campana desplaza el riesgo medio de quienes solicitan.
+  - {id: P-07, producto: TC,   vigente_desde: "2026-04-15", corte_score: 560, cuota_ingreso_max: 0.45, z_campana: 0.80}
+
+# -----------------------------------------------------------------------------
+# Concentración en grupos económicos (unidades de riesgo)
+# -----------------------------------------------------------------------------
+grupos_economicos:
+  cantidad: 60
+  grupo_concentrado: {id: G-014, sector: Agroindustria, participacion_objetivo: 0.042}
+
+# -----------------------------------------------------------------------------
+# Errores inyectados a propósito: prueban que la calidad por capa los detecta.
+# La lista exacta queda en data/_control/errores_inyectados.json (no la lee el
+# pipeline; solo las pruebas, como "respuesta correcta").
+# -----------------------------------------------------------------------------
+errores:
+  pagos_duplicados: 0.001          # proporción de pagos repetidos
+  pagos_fecha_invalida: 214        # pagos con fecha fuera de rango
+  saldos_negativos: 48             # filas de saldo mensual con saldo < 0
+  clientes_dpi_faltante: 0.004     # proporción de clientes sin DPI
+  clientes_dpi_formato_invalido: 37
+  clientes_duplicados: 20          # mismo DPI con dos códigos de cliente
+  desembolsos_sin_solicitud: 3     # viola OB-05: desembolso sin solicitud aprobada
+  archivo_tardio: {fuente: solicitudes, periodo: "2026-10", hora_llegada: "06:42"}

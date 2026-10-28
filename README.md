@@ -1,6 +1,6 @@
 # DAL-CRED-001 · Centro de Riesgo de Crédito y Cartera
 
-![Estado](https://img.shields.io/badge/estado-en%20construcci%C3%B3n-orange) ![Fase](https://img.shields.io/badge/fase-F2%20dise%C3%B1o-blue) ![Datos](https://img.shields.io/badge/datos-sint%C3%A9ticos-lightgrey)
+![Estado](https://img.shields.io/badge/estado-en%20construcci%C3%B3n-orange) ![Fase](https://img.shields.io/badge/fase-F3%20ingenier%C3%ADa%20de%20datos-blue) [![CI](https://github.com/KevinEnriqueAlvarez/dal-cred-001/actions/workflows/ci.yml/badge.svg)](https://github.com/KevinEnriqueAlvarez/dal-cred-001/actions/workflows/ci.yml) ![Datos](https://img.shields.io/badge/datos-sint%C3%A9ticos-lightgrey)
 
 > Del deterioro tardío a la alerta temprana: monitoreo de cartera, clasificación y reservas conforme a JM-47-2022, y originación con scoring y controles LD/IVE para un banco ficticio guatemalteco.
 
@@ -18,7 +18,7 @@ Banco Cumbre (ficticio) detecta tarde el deterioro de su cartera, arma el cierre
 | --- | --- | --- | --- |
 | O1 | Tiempo de cierre mensual de cartera | 3 días | 4 horas |
 | O2 | Cosechas deterioradas alertadas al menos 2 meses antes de su mora 90+ | 0 alertas automáticas | 100 % |
-| O3 | Mora 30+ a 6 meses de cosechas de consumo y tarjeta | 4,8 % | 3,8 % |
+| O3 | Mora 30+ a 6 meses de cosechas de consumo y tarjeta | 2,60 % (2025, [calibrada](docs/data_generator/calibracion.md)) | 2,08 % (−20 %) |
 
 ## Requisitos de las vacantes que demuestra
 
@@ -27,6 +27,37 @@ Monitoreo de cartera, cosechas y mora · evaluación de crédito con 5 C's y sco
 ## Arquitectura
 
 Fuentes sintéticas (Python) → Landing (hash SHA-256) → Bronze → Silver (SCD2) → **Gold certificada** → modelo semántico Power BI → tableros, reportes regulatorios y monitor de cierre. Orquestación con Airflow y corrida diaria pública con GitHub Actions; pruebas con dbt en cada capa.
+
+## Cómo correrlo
+
+```bash
+git clone https://github.com/KevinEnriqueAlvarez/dal-cred-001.git
+cd dal-cred-001
+pip install -e ".[dev]"
+python -m data_generator          # genera 24 meses de datos sintéticos en ./data (~100 s)
+pytest                            # pruebas automáticas
+```
+
+| Componente | Estado | Documentación |
+| --- | --- | --- |
+| Generador de datos sintéticos (3.1) | ✅ Listo | [Guía](docs/data_generator/README.md) · [Diccionario](docs/data_generator/diccionario_fuentes.md) · [Calibración](docs/data_generator/calibracion.md) |
+| Bronze, Silver y Gold con dbt (3.2–3.5) | Pendiente | — |
+| Orquestación diaria (3.6) | Pendiente | — |
+| Tableros Power BI (4.x) | Pendiente | — |
+
+Decisiones de arquitectura: [docs/adr](docs/adr/README.md).
+
+## Estructura del repositorio
+
+```
+dal-cred-001/
+├── data_generator/       # generador sintético (Python) y sus parámetros
+├── tests/                # pruebas automáticas (pytest)
+├── docs/                 # diseño, ADR, diccionarios, calibración, guías
+│   └── img/              # vistas de los tableros
+├── .github/workflows/    # CI: estilo, pruebas y escaneo de secretos
+└── pyproject.toml
+```
 
 ## Vistas (prototipo F2)
 
@@ -45,7 +76,7 @@ Fuentes sintéticas (Python) → Landing (hash SHA-256) → Bronze → Silver (S
 
 Metodología Data & Analytics Lab: 8 fases y 7 compuertas en 8 semanas (26-oct a 23-dic-2026).
 
-- **Fase actual:** F2 Planificación y diseño
+- **Fase actual:** F3 Ingeniería de datos (actividad 3.1 generador sintético)
 - **Próximo hito:** G3 Gold certificado (27-nov-2026)
 
 ## Supuestos
