@@ -242,7 +242,6 @@ class MotorSQLServer(Motor):
             raise ValueError("Falta la cadena de conexión: use --conexion o la variable DAL_SQLSERVER_CONN")
         self.con = pyodbc.connect(cadena, autocommit=False)
         self.cur = self.con.cursor()
-        self.cur.fast_executemany = True
 
     def tipo(self, logico: str) -> str:
         if logico.startswith("texto("):
@@ -289,10 +288,17 @@ class MotorSQLServer(Motor):
                 tamanos.append((pyodbc.SQL_WVARCHAR, 64, 0))
             else:
                 tamanos.append((pyodbc.SQL_WVARCHAR, LARGO_TEXTO_NEGOCIO, 0))
-        self.cur.setinputsizes(tamanos)
         valores = df.astype(object).where(df.notna(), None).values.tolist()
-        for i in range(0, len(valores), self.TAMANO_LOTE):
-            self.cur.executemany(sql, valores[i : i + self.TAMANO_LOTE])
+        # Cursor propio para la carga masiva: setinputsizes queda fijado en el cursor y no
+        # debe afectar a los INSERT de auditoría, que usan otros tipos.
+        cur = self.con.cursor()
+        try:
+            cur.fast_executemany = True
+            cur.setinputsizes(tamanos)
+            for i in range(0, len(valores), self.TAMANO_LOTE):
+                cur.executemany(sql, valores[i : i + self.TAMANO_LOTE])
+        finally:
+            cur.close()
 
     def confirmar(self):
         self.con.commit()
