@@ -61,13 +61,16 @@ jobs:
 
       - name: Driver ODBC 18
         run: |
-          if ! odbcinst -q -d -n "ODBC Driver 18 for SQL Server" >/dev/null 2>&1; then
-            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
-            curl -fsSL "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list" | sudo tee /etc/apt/sources.list.d/mssql-release.list
-            sudo apt-get update
-            sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+          if ! dpkg -s msodbcsql18 >/dev/null 2>&1; then
+            # El runner suele traer ya el repositorio de Microsoft; solo se agrega si falta.
+            if ! grep -rqs "packages.microsoft.com" /etc/apt/sources.list /etc/apt/sources.list.d/; then
+              curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+              curl -fsSL "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list" | sudo tee /etc/apt/sources.list.d/mssql-release.list
+            fi
+            sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/microsoft-prod.list" || sudo apt-get update
+            sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
           fi
-          odbcinst -q -d
+          cat /etc/odbcinst.ini
 
       - name: Instalar dependencias
         run: pip install -e ".[dev,sqlserver]"
