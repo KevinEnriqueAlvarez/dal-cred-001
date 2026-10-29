@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# DAL-CRED-001 · datos generados (se reconstruyen con: python -m data_generator)
+data/
+*.csv
+!docs/**/*.csv

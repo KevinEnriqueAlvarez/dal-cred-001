@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dal-cred-001"
+version = "0.3.1"
+description = "Centro de Riesgo de Crédito y Cartera · Banco Cumbre, S.A. (ficticio) · Data & Analytics Lab"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Kevin Enrique Alvarez" }]
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "pyyaml>=6.0",
+    "faker>=30.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[tool.setuptools.packages.find]
+include = ["data_generator*"]
+
+[tool.setuptools.package-data]
+data_generator = ["config/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "calibracion: pruebas lentas a escala 0.3 que verifican los objetivos de calibración (no corren en CI por defecto)",
+]
+addopts = "-m 'not calibracion'"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

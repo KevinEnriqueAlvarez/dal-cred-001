@@ -1,0 +1,51 @@
+# CI de DAL-CRED-001: corre en cada pull request y en cada cambio a main.
+# Es el control preventivo OB-07a (JM-104-2021): ningún cambio entra a main sin
+# estilo revisado, pruebas en verde y escaneo de secretos.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  calidad-de-codigo:
+    name: Estilo y pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -e ".[dev]"
+
+      - name: Estilo (ruff)
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Pruebas del generador (pytest, escala 0,02)
+        run: pytest -v
+
+      - name: Corrida de humo del generador
+        run: |
+          python -m data_generator --salida /tmp/datos --escala 0.02
+          cat /tmp/datos/_control/calibracion.json
+
+  secretos:
+    name: Escaneo de secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
