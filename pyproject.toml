@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dal-cred-001"
-version = "0.3.1"
+version = "0.3.2"
 description = "Centro de Riesgo de Crédito y Cartera · Banco Cumbre, S.A. (ficticio) · Data & Analytics Lab"
 readme = "README.md"
 license = { text = "MIT" }
@@ -15,13 +15,15 @@ dependencies = [
     "pandas>=2.2",
     "pyyaml>=6.0",
     "faker>=30.0",
+    "duckdb>=1.1",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6"]
+sqlserver = ["pyodbc>=5.1"]
 
 [tool.setuptools.packages.find]
-include = ["data_generator*"]
+include = ["data_generator*", "ingesta*"]
 
 [tool.setuptools.package-data]
 data_generator = ["config/*.yaml"]

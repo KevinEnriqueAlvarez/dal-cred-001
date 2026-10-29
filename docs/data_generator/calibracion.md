@@ -60,7 +60,7 @@ Empresarial mayor varía mucho de un mes a otro porque son pocos créditos grand
 
 Diferencia en diferencias del objetivo O3: (2,23 − 2,60) − (0,58 − 0,68) = **−0,27 puntos**, atribuibles al scorecard. La política P-07 se come parte de la mejora. La vista 5 lo mostrará así.
 
-**Ajuste al charter.** Las líneas base de O3 del charter (4,8 % → 3,8 %) eran ilustrativas y anteriores a la calibración. Con los datos generados, la línea base real de O3 es **2,60 %**. Una meta equivalente (−20 %) sería **2,08 %**. Este ajuste se propone para aprobación en el pull request de la actividad 3.1.
+**Ajuste al charter.** Las líneas base de O3 del charter (4,8 % → 3,8 %) eran ilustrativas y anteriores a la calibración. Con los datos generados, la línea base real de O3 es **2,60 %**. Una meta equivalente (−20 %) sería **2,08 %**. Ajuste aprobado por el patrocinador el 28-oct-2026 y registrado en el charter.
 
 ## Cosechas de tarjeta a 4 meses (detección de P-07)
 
