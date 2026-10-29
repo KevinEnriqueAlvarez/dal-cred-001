@@ -1,6 +1,6 @@
 # ADR-008 · Generador sintético con riesgo latente, cadena de Markov y errores inyectados
 
-- **Estado:** Propuesta (actividad 3.1; se aprueba con el merge del pull request)
+- **Estado:** Aprobada (merge del PR #1, 28-oct-2026)
 - **Fecha:** 28-oct-2026
 - **Decide:** Arquitecto e ingeniero de datos · **Aprueba:** Dueño de producto
 

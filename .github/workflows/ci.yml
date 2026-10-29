@@ -1,6 +1,6 @@
 # CI de DAL-CRED-001: corre en cada pull request y en cada cambio a main.
 # Es el control preventivo OB-07a (JM-104-2021): ningún cambio entra a main sin
-# estilo revisado, pruebas en verde y escaneo de secretos.
+# estilo revisado, pruebas en verde (DuckDB y SQL Server) y escaneo de secretos.
 name: CI
 
 on:
@@ -31,13 +31,84 @@ jobs:
           ruff check .
           ruff format --check .
 
-      - name: Pruebas del generador (pytest, escala 0,02)
+      - name: Pruebas (pytest; generador e ingesta sobre DuckDB)
         run: pytest -v
 
-      - name: Corrida de humo del generador
+      - name: Corrida de humo Landing -> Bronze (DuckDB)
         run: |
           python -m data_generator --salida /tmp/datos --escala 0.02
-          cat /tmp/datos/_control/calibracion.json
+          python -m ingesta --landing /tmp/datos/landing --destino /tmp/datos/dal_cred_001.duckdb
+
+  sqlserver:
+    name: Ingesta sobre SQL Server 2022
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Levantar SQL Server 2022 (contraseña aleatoria por corrida)
+        run: |
+          CLAVE="$(openssl rand -hex 16)Aa1!"
+          echo "::add-mask::$CLAVE"
+          docker run -d --name sql -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$CLAVE" -p 1433:1433 \
+            mcr.microsoft.com/mssql/server:2022-latest
+          echo "DAL_SQLSERVER_CONN=DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost,1433;DATABASE=dal_cred_001;UID=sa;PWD=$CLAVE;TrustServerCertificate=yes" >> "$GITHUB_ENV"
+          echo "DAL_SQLSERVER_MASTER=DRIVER={ODBC Driver 18 for SQL Server};SERVER=localhost,1433;DATABASE=master;UID=sa;PWD=$CLAVE;TrustServerCertificate=yes" >> "$GITHUB_ENV"
+
+      - name: Driver ODBC 18
+        run: |
+          if ! dpkg -s msodbcsql18 >/dev/null 2>&1; then
+            # El runner suele traer ya el repositorio de Microsoft; solo se agrega si falta.
+            if ! grep -rqs "packages.microsoft.com" /etc/apt/sources.list /etc/apt/sources.list.d/; then
+              curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+              curl -fsSL "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list" | sudo tee /etc/apt/sources.list.d/mssql-release.list
+            fi
+            sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/microsoft-prod.list" || sudo apt-get update
+            sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+          fi
+          cat /etc/odbcinst.ini
+
+      - name: Instalar dependencias
+        run: pip install -e ".[dev,sqlserver]"
+
+      - name: Esperar a SQL Server y crear la base
+        run: |
+          python - <<'EOF'
+          import os, time, pyodbc
+          for intento in range(60):
+              try:
+                  con = pyodbc.connect(os.environ["DAL_SQLSERVER_MASTER"], autocommit=True, timeout=5)
+                  break
+              except pyodbc.Error:
+                  time.sleep(2)
+          else:
+              raise SystemExit("SQL Server no respondió")
+          con.execute("IF DB_ID('dal_cred_001') IS NULL CREATE DATABASE dal_cred_001")
+          print(con.execute("SELECT @@VERSION").fetchone()[0].splitlines()[0])
+          EOF
+
+      - name: Pruebas de ingesta sobre SQL Server
+        run: pytest tests/test_ingesta.py -v -k sqlserver --junitxml=reporte-sqlserver.xml
+
+      - name: Publicar fallas como anotaciones
+        if: failure()
+        run: |
+          python - <<'EOF'
+          import xml.etree.ElementTree as ET
+          for caso in ET.parse("reporte-sqlserver.xml").iter("testcase"):
+              for falla in list(caso.iter("failure")) + list(caso.iter("error")):
+                  texto = ((falla.get("message") or "") + " | " + (falla.text or "")[-1500:]).replace("\n", " ")
+                  print(f"::error title={caso.get('name')}::{texto[:2000]}")
+          EOF
+
+      - name: Corrida de humo Landing -> Bronze (SQL Server)
+        run: |
+          python -m data_generator --salida /tmp/datos --escala 0.02 --sin-calibracion
+          python -m ingesta --landing /tmp/datos/landing --motor sqlserver
 
   secretos:
     name: Escaneo de secretos

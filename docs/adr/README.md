@@ -11,4 +11,5 @@ Cada decisión técnica relevante queda registrada con su contexto, la alternati
 | ADR-005 | Formato SIRC simulado y parametrizado | Aprobada (G2) |
 | ADR-006 | Saldo mensual para 24 meses; saldo diario solo 90 días | Aprobada (G2) |
 | ADR-007 | Umbrales LD y de política en tabla de parámetros | Aprobada (G2) |
-| [ADR-008](ADR-008-generador-sintetico.md) | Generador sintético con riesgo latente, cadena de Markov y errores inyectados | Propuesta (PR de la actividad 3.1) |
+| [ADR-008](ADR-008-generador-sintetico.md) | Generador sintético con riesgo latente, cadena de Markov y errores inyectados | Aprobada (PR #1, 28-oct-2026) |
+| [ADR-009](ADR-009-ingesta-bronze.md) | Ingesta a Bronze como copia fiel en texto, idempotente por hash y con dos motores | Propuesta (PR de la actividad 3.2) |

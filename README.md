@@ -35,13 +35,15 @@ git clone https://github.com/KevinEnriqueAlvarez/dal-cred-001.git
 cd dal-cred-001
 pip install -e ".[dev]"
 python -m data_generator          # genera 24 meses de datos sintéticos en ./data (~100 s)
+python -m ingesta                 # carga Landing -> Bronze en DuckDB (~1 min)
 pytest                            # pruebas automáticas
 ```
 
 | Componente | Estado | Documentación |
 | --- | --- | --- |
 | Generador de datos sintéticos (3.1) | ✅ Listo | [Guía](docs/data_generator/README.md) · [Diccionario](docs/data_generator/diccionario_fuentes.md) · [Calibración](docs/data_generator/calibracion.md) |
-| Bronze, Silver y Gold con dbt (3.2–3.5) | Pendiente | — |
+| Ingesta Landing → Bronze, DuckDB y SQL Server (3.2) | ✅ Listo | [Guía](docs/ingesta/README.md) · [SQL Server local](docs/ingesta/guia_sqlserver_local.md) |
+| Silver y Gold con dbt (3.3–3.5) | Pendiente | — |
 | Orquestación diaria (3.6) | Pendiente | — |
 | Tableros Power BI (4.x) | Pendiente | — |
 
@@ -52,6 +54,8 @@ Decisiones de arquitectura: [docs/adr](docs/adr/README.md).
 ```
 dal-cred-001/
 ├── data_generator/       # generador sintético (Python) y sus parámetros
+├── ingesta/              # carga Landing -> Bronze (DuckDB y SQL Server)
+├── sql/sqlserver/        # scripts de creación y verificación para SSMS
 ├── tests/                # pruebas automáticas (pytest)
 ├── docs/                 # diseño, ADR, diccionarios, calibración, guías
 │   └── img/              # vistas de los tableros
@@ -76,7 +80,7 @@ dal-cred-001/
 
 Metodología Data & Analytics Lab: 8 fases y 7 compuertas en 8 semanas (26-oct a 23-dic-2026).
 
-- **Fase actual:** F3 Ingeniería de datos (actividad 3.1 generador sintético)
+- **Fase actual:** F3 Ingeniería de datos (actividad 3.2 ingesta a Bronze)
 - **Próximo hito:** G3 Gold certificado (27-nov-2026)
 
 ## Supuestos
