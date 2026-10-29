@@ -92,7 +92,18 @@ jobs:
           EOF
 
       - name: Pruebas de ingesta sobre SQL Server
-        run: pytest tests/test_ingesta.py -v -k sqlserver
+        run: pytest tests/test_ingesta.py -v -k sqlserver --junitxml=reporte-sqlserver.xml
+
+      - name: Publicar fallas como anotaciones
+        if: failure()
+        run: |
+          python - <<'EOF'
+          import xml.etree.ElementTree as ET
+          for caso in ET.parse("reporte-sqlserver.xml").iter("testcase"):
+              for falla in list(caso.iter("failure")) + list(caso.iter("error")):
+                  texto = ((falla.get("message") or "") + " | " + (falla.text or "")[-1500:]).replace("\n", " ")
+                  print(f"::error title={caso.get('name')}::{texto[:2000]}")
+          EOF
 
       - name: Corrida de humo Landing -> Bronze (SQL Server)
         run: |
